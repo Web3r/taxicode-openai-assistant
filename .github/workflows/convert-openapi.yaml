@@ -8,6 +8,7 @@ on:
 jobs:
   convert:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -17,20 +18,20 @@ jobs:
         with:
           node-version: '18'
 
-      - name: Install openapi-to-function tool
+      - name: Install js-yaml dependency
         run: |
-          npm install -g openapi-to-function
+          npm init -y
+          npm install js-yaml
 
-      - name: Convert OpenAPI YAML to JSON functions
+      - name: Run OpenAPI to functions conversion
         run: |
           mkdir -p Booking/Quotes/generated
-          openapi-to-function Booking/Quotes/openai.yaml > Booking/Quotes/generated/functions.json
+          node tools/openapi-to-function.js Booking/Quotes/openai.yaml Booking/Quotes/generated/functions.json
 
-      - name: Commit changes
+      - name: Commit generated functions.json
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add Booking/Quotes/generated/functions.json
-          git commit -m "Update assistant functions from openai.yaml"
+          git commit -m "Auto-generate functions.json from openai.yaml" || echo "No changes to commit"
           git push
-
