@@ -1,0 +1,36 @@
+name: Convert OpenAPI to Assistant Functions
+
+on:
+  push:
+    paths:
+      - 'Booking/Quotes/openai.yaml'
+
+jobs:
+  convert:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install openapi-to-function tool
+        run: |
+          npm install -g openapi-to-function
+
+      - name: Convert OpenAPI YAML to JSON functions
+        run: |
+          mkdir -p Booking/Quotes/generated
+          openapi-to-function Booking/Quotes/openai.yaml > Booking/Quotes/generated/functions.json
+
+      - name: Commit changes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Booking/Quotes/generated/functions.json
+          git commit -m "Update assistant functions from openai.yaml"
+          git push
+
