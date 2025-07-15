@@ -1,22 +1,22 @@
 openapi: 3.0.3
 info:
-  title: Taxicode Quote API
-  version: 1.2.0
+  title: Taxicode Booking API
+  version: 1.3.0
   description: |
-    Request a journey quote using Taxicode’s booking API.  
-    Note: even error conditions use HTTP 200; clients must inspect the JSON `status` field.
+    Taxicode booking and payment APIs.  
+    All endpoints return HTTP 200; check `"status"` in JSON for errors.
+
 servers:
   - url: https://api.taxicode.com
+
 paths:
   /booking/quote/:
     post:
       summary: Get a quote for a journey (or a business-level error)
       description: |
         Request a journey quote.  
-        You can send `date` as:
-          - `"asap"` or a UNIX timestamp within 1 hour ⇒ treated as ASAP
-          - any future UNIX timestamp ⇒ scheduled journey  
-        ⚠️ HTTP 200 is always returned; check `status` in JSON.  
+        Send `date` as `"asap"` or a UNIX timestamp (timestamps within 1 hour => ASAP).
+        Always HTTP 200: check `status` in JSON.
       parameters:
         - in: query
           name: key
@@ -49,8 +49,7 @@ paths:
                   quote_type: mileage
       responses:
         '200':
-          description: |
-            Returns either a valid quote response **or** an error object—always via HTTP 200.
+          description: Quote or business-level error response
           content:
             application/json:
               schema:
@@ -59,7 +58,7 @@ paths:
                   - $ref: '#/components/schemas/BusinessError'
               examples:
                 successExample:
-                  summary: Valid quote
+                  summary: Valid quote result
                   value:
                     status: "OK"
                     journey_id: "CA765D41B18AFE79C1A1796A7F8557A4"
@@ -94,12 +93,12 @@ paths:
                     secureType: "secure.taxicode.com"
                     api_checkout_url: "https://api.taxicode.com/secure/checkout_session/create/"
                 errorDatePast:
-                  summary: Date/time in the past (soft error)
+                  summary: Past date error
                   value:
                     status: "ERROR"
                     error: "Sorry, journey date and time in the past are not valid"
                 errorMissingFields:
-                  summary: Missing pickup or destination
+                  summary: Missing fields error
                   value:
                     status: "ERROR"
                     error: "Pickup and Destination must be set."
@@ -108,6 +107,45 @@ paths:
                   value:
                     status: "ERROR"
                     error: "Sorry, generic error message"
+
+  /booking/pay/:
+    post:
+      summary: Confirm booking and initiate payment
+      description: |
+        Finalize the booking using a selected quote/vehicle.  
+        Returns a `session.api_checkout_url` to complete payment.  
+        Always HTTP 200: check `status` in JSON.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BookingPaymentRequest'
+      responses:
+        '200':
+          description: Booking payment result
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/BookingPaymentSuccess'
+                  - $ref: '#/components/schemas/BusinessError'
+              examples:
+                success:
+                  summary: Booking payment initiated
+                  value:
+                    status: "OK"
+                    session:
+                      state_hash: "abc123"
+                      gateway_public_key: "xyz456"
+                      booking_ref: "REF123456"
+                      api_checkout_url: "https://secure.taxicode.com/payment/?session=xyz"
+                errorQuote:
+                  summary: Quote not found or invalid
+                  value:
+                    status: "ERROR"
+                    error: "Quote not found"
+
 components:
   schemas:
     QuoteRequest:
@@ -128,9 +166,7 @@ components:
             - type: string
               enum: ["asap"]
             - type: integer
-          description: |
-            `"asap"` or UNIX timestamp within 1 hour ⇒ ASAP;  
-            otherwise schedule in future.
+          description: '"asap" or UNIX timestamp (within 1h = ASAP); otherwise schedule'
         return:
           oneOf:
             - type: integer
@@ -155,6 +191,7 @@ components:
         - pickup
         - destination
         - date
+
     QuoteResponse:
       type: object
       properties:
@@ -186,6 +223,59 @@ components:
         - journey_id
         - journey
         - quotes
+
+    BookingPaymentRequest:
+      type: object
+      properties:
+        quote:
+          type: string
+          description: Quote ID selected by user
+        vehicle:
+          type: integer
+          description: Index of chosen vehicle in `quote.vehicles[]`
+        method:
+          type: string
+          enum: [card, cash, applepay, googlepay, authorised_payment_handler]
+        key:
+          type: string
+        test:
+          type: string
+          enum: ["0", "1"]
+        flight_number:
+          type: string
+        voucher_code:
+          type: string
+        business_name:
+          type: string
+        business_ref:
+          type: string
+        notes:
+          type: string
+      required:
+        - quote
+        - key
+
+    BookingPaymentSuccess:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: ["OK"]
+        session:
+          type: object
+          properties:
+            state_hash:
+              type: string
+            gateway_public_key:
+              type: string
+            booking_ref:
+              type: string
+            api_checkout_url:
+              type: string
+      required:
+        - status
+        - session
+
     BusinessError:
       type: object
       properties:
@@ -197,6 +287,7 @@ components:
       required:
         - status
         - error
+
     Journey:
       type: object
       properties:
@@ -228,6 +319,7 @@ components:
           type: boolean
         is_airport:
           type: boolean
+
     Location:
       type: object
       properties:
@@ -242,6 +334,7 @@ components:
           maxItems: 2
         postcode:
           type: string
+
     Quote:
       type: object
       properties:
@@ -297,6 +390,7 @@ components:
           oneOf:
             - type: boolean
             - type: string
+
     Rating:
       type: object
       properties:
@@ -304,6 +398,7 @@ components:
           type: integer
         score:
           type: number
+
     Vehicle:
       type: object
       properties:
@@ -334,6 +429,7 @@ components:
               type: string
             class:
               type: string
+
     CardOption:
       type: object
       properties:

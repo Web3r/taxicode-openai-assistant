@@ -1,0 +1,71 @@
+{
+  "functions": [
+    {
+      "name": "get_taxicode_quote",
+      "description": "Get a vehicle quote for a journey using Taxicode API",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "key": { "type": "string", "description": "Your Taxicode API key" },
+          "pickup": { "type": "string", "description": "Pickup location" },
+          "destination": { "type": "string", "description": "Destination location" },
+          "date": {
+            "type": ["string", "integer"],
+            "description": "Journey time as UNIX timestamp or 'asap'"
+          },
+          "return": {
+            "type": ["integer", "boolean"],
+            "description": "Return time or false"
+          },
+          "people": { "type": "integer", "description": "Number of passengers" },
+          "quote_type": {
+            "type": "string",
+            "enum": ["mileage", "hourly"],
+            "description": "Type of quote"
+          },
+          "hours": { "type": "integer", "description": "Duration if hourly" },
+          "split": { "type": "boolean", "description": "Split by vehicle type" },
+          "vias": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "Optional via points"
+          },
+          "other_rates": { "type": "string" },
+          "company": { "type": "integer" },
+          "instances": { "type": "integer" }
+        },
+        "required": ["key", "pickup", "destination", "date"],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "pay_taxicode_booking",
+      "description": "Confirm and pay for a booking using a selected quote",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "quote": { "type": "string", "description": "Selected quote ID" },
+          "vehicle": { "type": "integer", "description": "Index of chosen vehicle" },
+          "method": {
+            "type": "string",
+            "enum": ["card", "cash", "applepay", "googlepay", "authorised_payment_handler"],
+            "description": "Payment method"
+          },
+          "key": { "type": "string", "description": "Your API key" },
+          "test": {
+            "type": "string",
+            "enum": ["0", "1"],
+            "description": "Use '1' for sandbox"
+          },
+          "flight_number": { "type": "string" },
+          "voucher_code": { "type": "string" },
+          "business_name": { "type": "string" },
+          "business_ref": { "type": "string" },
+          "notes": { "type": "string" }
+        },
+        "required": ["quote", "key"],
+        "additionalProperties": false
+      }
+    }
+  ]
+}
