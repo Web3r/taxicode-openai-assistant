@@ -1,6 +1,6 @@
 [
   {
-    "name": "post__booking_quote_",
+    "name": "createBookingQuote",
     "description": "Get a quote for a journey (or a business-level error)",
     "parameters": {
       "type": "object",
@@ -16,7 +16,7 @@
     }
   },
   {
-    "name": "post__booking_pay_",
+    "name": "createBookingPayment",
     "description": "Confirm booking and initiate payment",
     "parameters": {
       "type": "object",
