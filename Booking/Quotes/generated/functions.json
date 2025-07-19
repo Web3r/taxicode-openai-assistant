@@ -1,18 +1,10 @@
 [
   {
     "name": "createBookingQuote",
-    "description": "Get a quote for a journey (or a business-level error)",
+    "description": "Get a quote for a journey",
     "parameters": {
       "type": "object",
-      "properties": {
-        "key": {
-          "type": "string",
-          "description": "Your API key (can also be sent in JSON body)"
-        }
-      },
-      "required": [
-        "key"
-      ]
+      "properties": {}
     }
   },
   {
