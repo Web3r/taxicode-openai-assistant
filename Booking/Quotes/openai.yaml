@@ -4,7 +4,7 @@ info:
   version: 1.3.0
   description: |
     Taxicode booking and payment APIs.  
-    All endpoints return HTTP 200; check `"status"` in JSON for errors.
+    All endpoints return HTTP 200; check "status" in JSON for errors.
 
 servers:
   - url: https://api.taxicode.com
@@ -15,8 +15,8 @@ paths:
       operationId: createBookingQuote
       summary: Get a quote for a journey (or a business-level error)
       description: |
-        Request a journey quote.  
-        Send `date` as `"asap"` or a UNIX timestamp (timestamps within 1 hour => ASAP).
+        Request a journey quote.
+        Send `date` as "asap" or a UNIX timestamp (timestamps within 1 hour => ASAP).
         Always HTTP 200: check `status` in JSON.
       parameters:
         - in: query
@@ -30,24 +30,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/QuoteRequest'
-            examples:
-              asapExample:
-                value:
-                  key: "YOUR_API_KEY"
-                  pickup: "51.5074,-0.1278"
-                  destination: "51.5098,-0.1180"
-                  date: "asap"
-                  people: 2
-                  quote_type: mileage
-              scheduledExample:
-                value:
-                  key: "YOUR_API_KEY"
-                  pickup: "51.5074,-0.1278"
-                  destination: "51.5098,-0.1180"
-                  date: 1710150000
-                  people: 2
-                  quote_type: mileage
+              $ref: "#/components/schemas/QuoteRequest"
       responses:
         '200':
           description: Quote or business-level error response
@@ -55,74 +38,23 @@ paths:
             application/json:
               schema:
                 oneOf:
-                  - $ref: '#/components/schemas/QuoteResponse'
-                  - $ref: '#/components/schemas/BusinessError'
-              examples:
-                successExample:
-                  summary: Valid quote result
-                  value:
-                    status: "OK"
-                    journey_id: "CA765D41B18AFE79C1A1796A7F8557A4"
-                    journey:
-                      pickup:
-                        string: "york"
-                        position: [53.957744, -1.082259]
-                        postcode: "YO1 9NF"
-                      vias: []
-                      destination:
-                        string: "york station"
-                        position: [53.958107, -1.092385]
-                        postcode: "YO24"
-                      distance: 1
-                      duration: 238
-                      duration_text: "3 mins"
-                      date: "2024-07-30 12:00:00"
-                      return: false
-                      people: 1
-                      quote_type: "mileage"
-                      hourly: false
-                      is_airport: false
-                    quotes:
-                      83EEECC21BBC13268C67526D08B58160:
-                        $ref: "#/components/schemas/Quote"
-                    card:
-                      - code: "VISA"
-                        name: "Visa Credit"
-                        uplift: 5
-                    payment_url: "https://secure.taxicode.com/api/"
-                    continue_url: "https://secure.taxicode.com/payment/"
-                    secureType: "secure.taxicode.com"
-                    api_checkout_url: "https://api.taxicode.com/secure/checkout_session/create/"
-                errorDatePast:
-                  summary: Past date error
-                  value:
-                    status: "ERROR"
-                    error: "Sorry, journey date and time in the past are not valid"
-                errorMissingFields:
-                  summary: Missing fields error
-                  value:
-                    status: "ERROR"
-                    error: "Pickup and Destination must be set."
-                errorGeneric:
-                  summary: Generic error
-                  value:
-                    status: "ERROR"
-                    error: "Sorry, generic error message"
+                  - $ref: "#/components/schemas/QuoteResponse"
+                  - $ref: "#/components/schemas/BusinessError"
 
   /booking/pay/:
     post:
       operationId: createBookingPayment
       summary: Confirm booking and initiate payment
       description: |
-        Finalize the booking using a selected quote/vehicle.  
-        Returns a `session.api_checkout_url` to complete payment.  
+        Finalize the booking using a selected quote/vehicle.
+        Returns a `session.api_checkout_url` to complete payment.
         Always HTTP 200: check `status` in JSON.
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/BookingPaymentRequest'
+              $ref: "#/components/schemas/BookingPaymentRequest"
       responses:
         '200':
           description: Booking payment result
@@ -130,20 +62,169 @@ paths:
             application/json:
               schema:
                 oneOf:
-                  - $ref: '#/components/schemas/BookingPaymentSuccess'
-                  - $ref: '#/components/schemas/BusinessError'
-              examples:
-                success:
-                  summary: Booking payment initiated
-                  value:
-                    status: "OK"
-                    session:
-                      state_hash: "abc123"
-                      gateway_public_key: "xyz456"
-                      booking_ref: "REF123456"
-                      api_checkout_url: "https://secure.taxicode.com/payment/?session=xyz"
-                errorQuote:
-                  summary: Quote not found or invalid
-                  value:
-                    status: "ERROR"
-                    error: "Quote not found"
+                  - $ref: "#/components/schemas/BookingPaymentSuccess"
+                  - $ref: "#/components/schemas/BusinessError"
+
+components:
+  schemas:
+    QuoteRequest:
+      type: object
+      properties:
+        key:
+          type: string
+        pickup:
+          type: string
+        destination:
+          type: string
+        vias:
+          type: array
+          items:
+            type: string
+        date:
+          oneOf:
+            - type: string
+              enum: ["asap"]
+            - type: integer
+        return:
+          oneOf:
+            - type: integer
+            - type: boolean
+        people:
+          type: integer
+        quote_type:
+          type: string
+          enum: [mileage, hourly]
+        hours:
+          type: integer
+        split:
+          type: boolean
+        other_rates:
+          type: string
+        company:
+          type: integer
+        instances:
+          type: integer
+      required:
+        - key
+        - pickup
+        - destination
+        - date
+
+    QuoteResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: ["OK"]
+        journey_id:
+          type: string
+        journey:
+          $ref: "#/components/schemas/Journey"
+        quotes:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/Quote"
+        card:
+          type: array
+          items:
+            $ref: "#/components/schemas/CardOption"
+        payment_url:
+          type: string
+        continue_url:
+          type: string
+        secureType:
+          type: string
+        api_checkout_url:
+          type: string
+      required:
+        - status
+        - journey_id
+        - journey
+        - quotes
+
+    BookingPaymentRequest:
+      type: object
+      properties:
+        quote:
+          type: string
+        vehicle:
+          type: integer
+        method:
+          type: string
+          enum: [card, cash, applepay, googlepay, authorised_payment_handler]
+        key:
+          type: string
+        test:
+          type: string
+          enum: ["0", "1"]
+        flight_number:
+          type: string
+        voucher_code:
+          type: string
+        business_name:
+          type: string
+        business_ref:
+          type: string
+        notes:
+          type: string
+      required:
+        - quote
+        - key
+
+    BookingPaymentSuccess:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: ["OK"]
+        session:
+          type: object
+          properties:
+            state_hash:
+              type: string
+            gateway_public_key:
+              type: string
+            booking_ref:
+              type: string
+            api_checkout_url:
+              type: string
+          required:
+            - state_hash
+            - gateway_public_key
+            - booking_ref
+            - api_checkout_url
+      required:
+        - status
+        - session
+
+    BusinessError:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: ["ERROR"]
+        error:
+          type: string
+      required:
+        - status
+        - error
+
+    Journey:
+      type: object
+      properties:
+        pickup:
+          $ref: "#/components/schemas/Location"
+        vias:
+          type: array
+          items:
+            $ref: "#/components/schemas/Location"
+        destination:
+          $ref: "#/components/schemas/Location"
+        distance:
+          type: number
+        duration:
+          type: integer
+        duration_text:
+          type: string
+        date:
+          type: string
